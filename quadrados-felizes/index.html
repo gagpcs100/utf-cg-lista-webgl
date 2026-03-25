@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quadrados Felizes</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #e7d3e3;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      border: 1px solid #333;
+      background: transparent;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="glcanvas" width="800" height="800"></canvas>
+
+  <script>
+    const canvas = document.getElementById("glcanvas");
+    const gl = canvas.getContext("webgl");
+
+    if (!gl) {
+      alert("WebGL não é suportado neste navegador.");
+      throw new Error("WebGL não suportado.");
+    }
+
+    const vertexShaderSource = `
+      attribute vec2 a_position;
+      uniform vec2 u_deslocamento;
+
+      void main() {
+        vec2 posicaoFinal = a_position + u_deslocamento;
+        gl_Position = vec4(posicaoFinal, 0.0, 1.0);
+      }
+    `;
+
+    const fragmentShaderSource = `
+      precision mediump float;
+      uniform vec4 u_cor;
+
+      void main() {
+        gl_FragColor = u_cor;
+      }
+    `;
+
+    function criarShader(gl, tipo, codigoFonte) {
+      const shader = gl.createShader(tipo);
+      gl.shaderSource(shader, codigoFonte);
+      gl.compileShader(shader);
+
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error("Erro no shader:", gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+
+      return shader;
+    }
+
+    function criarPrograma(gl, vertexShader, fragmentShader) {
+      const programa = gl.createProgram();
+      gl.attachShader(programa, vertexShader);
+      gl.attachShader(programa, fragmentShader);
+      gl.linkProgram(programa);
+
+      if (!gl.getProgramParameter(programa, gl.LINK_STATUS)) {
+        console.error("Erro no programa:", gl.getProgramInfoLog(programa));
+        gl.deleteProgram(programa);
+        return null;
+      }
+
+      return programa;
+    }
+
+    const vertexShader = criarShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = criarShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    const programa = criarPrograma(gl, vertexShader, fragmentShader);
+
+    const aPosition = gl.getAttribLocation(programa, "a_position");
+    const uDeslocamento = gl.getUniformLocation(programa, "u_deslocamento");
+    const uCor = gl.getUniformLocation(programa, "u_cor");
+
+    // Um único quadrado base, centrado na origem.
+    // Ele será reutilizado para os 9 quadrados.
+    const verticesQuadrado = new Float32Array([
+      -0.18, -0.18,
+       0.18, -0.18,
+      -0.18,  0.18,
+
+      -0.18,  0.18,
+       0.18, -0.18,
+       0.18,  0.18
+    ]);
+
+    const bufferVertices = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
+    gl.bufferData(gl.ARRAY_BUFFER, verticesQuadrado, gl.STATIC_DRAW);
+
+    // Cada quadrado é descrito por deslocamento + cor.
+    const quadrados = [
+      { deslocamento: [-0.6,  0.6], cor: [0.0, 0.0, 0.0, 1.0] }, // preto
+      { deslocamento: [ 0.0,  0.6], cor: [1.0, 0.0, 0.0, 1.0] }, // vermelho
+      { deslocamento: [ 0.6,  0.6], cor: [0.0, 1.0, 0.0, 1.0] }, // verde
+
+      { deslocamento: [-0.6,  0.0], cor: [0.0, 0.0, 1.0, 1.0] }, // azul
+      { deslocamento: [ 0.0,  0.0], cor: [1.0, 1.0, 0.0, 1.0] }, // amarelo
+      { deslocamento: [ 0.6,  0.0], cor: [1.0, 0.0, 1.0, 1.0] }, // magenta
+
+      { deslocamento: [-0.6, -0.6], cor: [0.0, 1.0, 1.0, 1.0] }, // ciano
+      { deslocamento: [ 0.0, -0.6], cor: [0.6, 0.6, 0.6, 1.0] }, // cinza
+      { deslocamento: [ 0.6, -0.6], cor: [1.0, 1.0, 1.0, 1.0] }  // branco
+    ];
+
+    function desenhar() {
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0.85, 0.85, 0.85, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.useProgram(programa);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
+      gl.enableVertexAttribArray(aPosition);
+      gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+      for (const quadrado of quadrados) {
+        gl.uniform2fv(uDeslocamento, quadrado.deslocamento);
+        gl.uniform4fv(uCor, quadrado.cor);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
+    }
+
+    desenhar();
+  </script>
+</body>
+</html>
