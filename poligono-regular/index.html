@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exercício 3 - Polígono Regular</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #e5e5e5;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      border: 1px solid #333;
+      background: white;
+    }
+
+    .info {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 14px;
+      border: 1px solid #bbb;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="info">
+    <div><strong>Controles</strong></div>
+    <div>Tecla <strong>+</strong>: aumenta lados</div>
+    <div>Tecla <strong>-</strong>: diminui lados</div>
+    <div id="status">Número de lados: 5</div>
+  </div>
+
+  <canvas id="glcanvas" width="800" height="800"></canvas>
+
+  <script>
+    const canvas = document.getElementById("glcanvas");
+    const gl = canvas.getContext("webgl");
+
+    if (!gl) {
+      alert("WebGL não suportado.");
+      throw new Error("WebGL não suportado.");
+    }
+
+    const vertexShaderSource = `
+      attribute vec2 a_position;
+      uniform float u_pointSize;
+
+      void main() {
+        gl_Position = vec4(a_position, 0.0, 1.0);
+        gl_PointSize = u_pointSize;
+      }
+    `;
+
+    const fragmentShaderSource = `
+      precision mediump float;
+      uniform vec4 u_color;
+
+      void main() {
+        gl_FragColor = u_color;
+      }
+    `;
+
+    function criarShader(gl, tipo, codigoFonte) {
+      const shader = gl.createShader(tipo);
+      gl.shaderSource(shader, codigoFonte);
+      gl.compileShader(shader);
+
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        throw new Error("Erro ao compilar shader.");
+      }
+
+      return shader;
+    }
+
+    function criarPrograma(gl, vertexShader, fragmentShader) {
+      const programa = gl.createProgram();
+      gl.attachShader(programa, vertexShader);
+      gl.attachShader(programa, fragmentShader);
+      gl.linkProgram(programa);
+
+      if (!gl.getProgramParameter(programa, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(programa));
+        gl.deleteProgram(programa);
+        throw new Error("Erro ao linkar programa.");
+      }
+
+      return programa;
+    }
+
+    const vertexShader = criarShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = criarShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    const programa = criarPrograma(gl, vertexShader, fragmentShader);
+
+    const aPosition = gl.getAttribLocation(programa, "a_position");
+    const uColor = gl.getUniformLocation(programa, "u_color");
+    const uPointSize = gl.getUniformLocation(programa, "u_pointSize");
+
+    let numLados = 5;
+    const RAIO = 0.55;
+    const CENTRO_X = 0.0;
+    const CENTRO_Y = 0.0;
+    const status = document.getElementById("status");
+
+    const bufferVertices = gl.createBuffer();
+
+    function gerarVerticesPoligonoRegular(numLados, raio, centroX, centroY) {
+      const vertices = [];
+
+      for (let i = 0; i < numLados; i++) {
+        const angulo = (2 * Math.PI * i) / numLados;
+        const x = centroX + raio * Math.cos(angulo);
+        const y = centroY + raio * Math.sin(angulo);
+        vertices.push(x, y);
+      }
+
+      return new Float32Array(vertices);
+    }
+
+    function atualizarBuffer() {
+      const verticesPoligono = gerarVerticesPoligonoRegular(
+        numLados,
+        RAIO,
+        CENTRO_X,
+        CENTRO_Y
+      );
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
+      gl.bufferData(gl.ARRAY_BUFFER, verticesPoligono, gl.STATIC_DRAW);
+    }
+
+    function atualizarStatus() {
+      status.textContent = `Número de lados: ${numLados}`;
+    }
+
+    function desenhar() {
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(1.0, 1.0, 1.0, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.useProgram(programa);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
+      gl.enableVertexAttribArray(aPosition);
+      gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+      gl.uniform4fv(uColor, [0.0, 0.8, 0.8, 1.0]);
+      gl.uniform1f(uPointSize, 1.0);
+      gl.drawArrays(gl.LINE_LOOP, 0, numLados);
+
+      gl.uniform4fv(uColor, [0.35, 0.35, 0.35, 1.0]);
+      gl.uniform1f(uPointSize, 8.0);
+      gl.drawArrays(gl.POINTS, 0, numLados);
+    }
+
+    function atualizarCena() {
+      atualizarBuffer();
+      atualizarStatus();
+      desenhar();
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "+" || event.key === "=") {
+        numLados++;
+        atualizarCena();
+      }
+
+      if (event.key === "-" || event.key === "_") {
+        if (numLados > 3) {
+          numLados--;
+          atualizarCena();
+        }
+      }
+    });
+
+    atualizarCena();
+  </script>
+</body>
+</html>

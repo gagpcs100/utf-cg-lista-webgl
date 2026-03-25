@@ -83,19 +83,16 @@
     const aPosition = gl.getAttribLocation(programa, "a_position");
     const uColor = gl.getUniformLocation(programa, "u_color");
 
-    // Quadrado externo
     const A = [-0.55,  0.55];
     const B = [ 0.55,  0.55];
     const C = [ 0.55, -0.55];
     const D = [-0.55, -0.55];
 
-    // Quadrado interno
     const E = [-0.18,  0.18];
     const F = [ 0.18,  0.18];
     const G = [ 0.18, -0.18];
     const H = [-0.18, -0.18];
 
-    // Preenchimento: 8 triângulos
     const verticesPreenchimento = new Float32Array([
       ...A, ...B, ...F,
       ...A, ...F, ...E,
@@ -110,21 +107,17 @@
       ...D, ...E, ...H
     ]);
 
-    // Linhas: contornos + diagonais da triangulação
     const verticesLinhas = new Float32Array([
-      // contorno externo
       ...A, ...B,
       ...B, ...C,
       ...C, ...D,
       ...D, ...A,
 
-      // contorno interno
       ...E, ...F,
       ...F, ...G,
       ...G, ...H,
       ...H, ...E,
 
-      // diagonais
       ...A, ...F,
       ...B, ...G,
       ...C, ...H,
@@ -154,12 +147,10 @@
 
       gl.useProgram(programa);
 
-      // preenchimento azul
       configurarAtributo(bufferPreenchimento);
       gl.uniform4fv(uColor, [0.45, 0.85, 0.85, 1.0]);
       gl.drawArrays(gl.TRIANGLES, 0, verticesPreenchimento.length / 2);
 
-      // contornos pretos
       if (mostrarContornos) {
         configurarAtributo(bufferLinhas);
         gl.uniform4fv(uColor, [0.0, 0.0, 0.0, 1.0]);
