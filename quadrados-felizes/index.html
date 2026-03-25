@@ -89,8 +89,7 @@
     const uDeslocamento = gl.getUniformLocation(programa, "u_deslocamento");
     const uCor = gl.getUniformLocation(programa, "u_cor");
 
-    // Um único quadrado base, centrado na origem.
-    // Ele será reutilizado para os 9 quadrados.
+
     const verticesQuadrado = new Float32Array([
       -0.18, -0.18,
        0.18, -0.18,
@@ -105,19 +104,18 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
     gl.bufferData(gl.ARRAY_BUFFER, verticesQuadrado, gl.STATIC_DRAW);
 
-    // Cada quadrado é descrito por deslocamento + cor.
     const quadrados = [
-      { deslocamento: [-0.6,  0.6], cor: [0.0, 0.0, 0.0, 1.0] }, // preto
-      { deslocamento: [ 0.0,  0.6], cor: [1.0, 0.0, 0.0, 1.0] }, // vermelho
-      { deslocamento: [ 0.6,  0.6], cor: [0.0, 1.0, 0.0, 1.0] }, // verde
+      { deslocamento: [-0.6,  0.6], cor: [0.0, 0.0, 0.0, 1.0] }, 
+      { deslocamento: [ 0.0,  0.6], cor: [1.0, 0.0, 0.0, 1.0] }, 
+      { deslocamento: [ 0.6,  0.6], cor: [0.0, 1.0, 0.0, 1.0] }, 
 
-      { deslocamento: [-0.6,  0.0], cor: [0.0, 0.0, 1.0, 1.0] }, // azul
-      { deslocamento: [ 0.0,  0.0], cor: [1.0, 1.0, 0.0, 1.0] }, // amarelo
-      { deslocamento: [ 0.6,  0.0], cor: [1.0, 0.0, 1.0, 1.0] }, // magenta
+      { deslocamento: [-0.6,  0.0], cor: [0.0, 0.0, 1.0, 1.0] }, 
+      { deslocamento: [ 0.0,  0.0], cor: [1.0, 1.0, 0.0, 1.0] }, 
+      { deslocamento: [ 0.6,  0.0], cor: [1.0, 0.0, 1.0, 1.0] }, 
 
-      { deslocamento: [-0.6, -0.6], cor: [0.0, 1.0, 1.0, 1.0] }, // ciano
-      { deslocamento: [ 0.0, -0.6], cor: [0.6, 0.6, 0.6, 1.0] }, // cinza
-      { deslocamento: [ 0.6, -0.6], cor: [1.0, 1.0, 1.0, 1.0] }  // branco
+      { deslocamento: [-0.6, -0.6], cor: [0.0, 1.0, 1.0, 1.0] }, 
+      { deslocamento: [ 0.0, -0.6], cor: [0.6, 0.6, 0.6, 1.0] }, 
+      { deslocamento: [ 0.6, -0.6], cor: [1.0, 1.0, 1.0, 1.0] } 
     ];
 
     function desenhar() {

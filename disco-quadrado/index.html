@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exercício 2 - Disco Quadrado</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #dddddd;
+    }
+
+    canvas {
+      border: 1px solid #333;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="glcanvas" width="800" height="800"></canvas>
+
+  <script>
+    const canvas = document.getElementById("glcanvas");
+    const gl = canvas.getContext("webgl");
+
+    if (!gl) {
+      alert("WebGL não suportado.");
+      throw new Error("WebGL não suportado.");
+    }
+
+    const vertexShaderSource = `
+      attribute vec2 a_position;
+
+      void main() {
+        gl_Position = vec4(a_position, 0.0, 1.0);
+      }
+    `;
+
+    const fragmentShaderSource = `
+      precision mediump float;
+      uniform vec4 u_color;
+
+      void main() {
+        gl_FragColor = u_color;
+      }
+    `;
+
+    function criarShader(tipo, fonte) {
+      const shader = gl.createShader(tipo);
+      gl.shaderSource(shader, fonte);
+      gl.compileShader(shader);
+
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+        throw new Error("Erro ao compilar shader");
+      }
+
+      return shader;
+    }
+
+    function criarPrograma(vs, fs) {
+      const programa = gl.createProgram();
+      gl.attachShader(programa, vs);
+      gl.attachShader(programa, fs);
+      gl.linkProgram(programa);
+
+      if (!gl.getProgramParameter(programa, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(programa));
+        throw new Error("Erro ao linkar programa");
+      }
+
+      return programa;
+    }
+
+    const vertexShader = criarShader(gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = criarShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+    const programa = criarPrograma(vertexShader, fragmentShader);
+
+    const aPosition = gl.getAttribLocation(programa, "a_position");
+    const uColor = gl.getUniformLocation(programa, "u_color");
+
+    // Quadrado externo
+    const A = [-0.55,  0.55];
+    const B = [ 0.55,  0.55];
+    const C = [ 0.55, -0.55];
+    const D = [-0.55, -0.55];
+
+    // Quadrado interno
+    const E = [-0.18,  0.18];
+    const F = [ 0.18,  0.18];
+    const G = [ 0.18, -0.18];
+    const H = [-0.18, -0.18];
+
+    // Preenchimento: 8 triângulos
+    const verticesPreenchimento = new Float32Array([
+      ...A, ...B, ...F,
+      ...A, ...F, ...E,
+
+      ...B, ...C, ...G,
+      ...B, ...G, ...F,
+
+      ...C, ...D, ...H,
+      ...C, ...H, ...G,
+
+      ...D, ...A, ...E,
+      ...D, ...E, ...H
+    ]);
+
+    // Linhas: contornos + diagonais da triangulação
+    const verticesLinhas = new Float32Array([
+      // contorno externo
+      ...A, ...B,
+      ...B, ...C,
+      ...C, ...D,
+      ...D, ...A,
+
+      // contorno interno
+      ...E, ...F,
+      ...F, ...G,
+      ...G, ...H,
+      ...H, ...E,
+
+      // diagonais
+      ...A, ...F,
+      ...B, ...G,
+      ...C, ...H,
+      ...D, ...E
+    ]);
+
+    const bufferPreenchimento = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferPreenchimento);
+    gl.bufferData(gl.ARRAY_BUFFER, verticesPreenchimento, gl.STATIC_DRAW);
+
+    const bufferLinhas = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferLinhas);
+    gl.bufferData(gl.ARRAY_BUFFER, verticesLinhas, gl.STATIC_DRAW);
+
+    let mostrarContornos = false;
+
+    function configurarAtributo(buffer) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.enableVertexAttribArray(aPosition);
+      gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+    }
+
+    function desenhar() {
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(1.0, 1.0, 1.0, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.useProgram(programa);
+
+      // preenchimento azul
+      configurarAtributo(bufferPreenchimento);
+      gl.uniform4fv(uColor, [0.45, 0.85, 0.85, 1.0]);
+      gl.drawArrays(gl.TRIANGLES, 0, verticesPreenchimento.length / 2);
+
+      // contornos pretos
+      if (mostrarContornos) {
+        configurarAtributo(bufferLinhas);
+        gl.uniform4fv(uColor, [0.0, 0.0, 0.0, 1.0]);
+        gl.drawArrays(gl.LINES, 0, verticesLinhas.length / 2);
+      }
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "c" || event.key === "C") {
+        mostrarContornos = !mostrarContornos;
+        desenhar();
+      }
+    });
+
+    desenhar();
+  </script>
+</body>
+</html>
