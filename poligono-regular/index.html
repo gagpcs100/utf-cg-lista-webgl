@@ -45,15 +45,15 @@
 
   <script>
     const canvas = document.getElementById("glcanvas");
-    const gl = canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl2");
 
     if (!gl) {
-      alert("WebGL não suportado.");
-      throw new Error("WebGL não suportado.");
+      alert("WebGL 2 não suportado.");
+      throw new Error("WebGL 2 não suportado.");
     }
 
-    const vertexShaderSource = `
-      attribute vec2 a_position;
+    const vertexShaderSource = `#version 300 es
+      in vec2 a_position;
       uniform float u_pointSize;
 
       void main() {
@@ -62,30 +62,30 @@
       }
     `;
 
-    const fragmentShaderSource = `
+    const fragmentShaderSource = `#version 300 es
       precision mediump float;
       uniform vec4 u_color;
+      out vec4 outColor;
 
       void main() {
-        gl_FragColor = u_color;
+        outColor = u_color;
       }
     `;
 
-    function criarShader(gl, tipo, codigoFonte) {
+    function criarShader(tipo, codigoFonte) {
       const shader = gl.createShader(tipo);
       gl.shaderSource(shader, codigoFonte);
       gl.compileShader(shader);
 
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
         console.error(gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
         throw new Error("Erro ao compilar shader.");
       }
 
       return shader;
     }
 
-    function criarPrograma(gl, vertexShader, fragmentShader) {
+    function criarPrograma(vertexShader, fragmentShader) {
       const programa = gl.createProgram();
       gl.attachShader(programa, vertexShader);
       gl.attachShader(programa, fragmentShader);
@@ -93,16 +93,15 @@
 
       if (!gl.getProgramParameter(programa, gl.LINK_STATUS)) {
         console.error(gl.getProgramInfoLog(programa));
-        gl.deleteProgram(programa);
         throw new Error("Erro ao linkar programa.");
       }
 
       return programa;
     }
 
-    const vertexShader = criarShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-    const fragmentShader = criarShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-    const programa = criarPrograma(gl, vertexShader, fragmentShader);
+    const vertexShader = criarShader(gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = criarShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+    const programa = criarPrograma(vertexShader, fragmentShader);
 
     const aPosition = gl.getAttribLocation(programa, "a_position");
     const uColor = gl.getUniformLocation(programa, "u_color");
@@ -114,6 +113,7 @@
     const CENTRO_Y = 0.0;
     const status = document.getElementById("status");
 
+    const vao = gl.createVertexArray();
     const bufferVertices = gl.createBuffer();
 
     function gerarVerticesPoligonoRegular(numLados, raio, centroX, centroY) {
@@ -137,8 +137,14 @@
         CENTRO_Y
       );
 
+      gl.bindVertexArray(vao);
       gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
       gl.bufferData(gl.ARRAY_BUFFER, verticesPoligono, gl.STATIC_DRAW);
+
+      gl.enableVertexAttribArray(aPosition);
+      gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+      gl.bindVertexArray(null);
     }
 
     function atualizarStatus() {
@@ -151,10 +157,7 @@
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       gl.useProgram(programa);
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
-      gl.enableVertexAttribArray(aPosition);
-      gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+      gl.bindVertexArray(vao);
 
       gl.uniform4fv(uColor, [0.0, 0.8, 0.8, 1.0]);
       gl.uniform1f(uPointSize, 1.0);
@@ -163,6 +166,8 @@
       gl.uniform4fv(uColor, [0.35, 0.35, 0.35, 1.0]);
       gl.uniform1f(uPointSize, 8.0);
       gl.drawArrays(gl.POINTS, 0, numLados);
+
+      gl.bindVertexArray(null);
     }
 
     function atualizarCena() {

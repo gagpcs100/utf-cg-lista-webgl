@@ -26,15 +26,15 @@
 
   <script>
     const canvas = document.getElementById("glcanvas");
-    const gl = canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl2");
 
     if (!gl) {
-      alert("WebGL não é suportado neste navegador.");
-      throw new Error("WebGL não suportado.");
+      alert("WebGL 2 não é suportado neste navegador.");
+      throw new Error("WebGL 2 não suportado.");
     }
 
-    const vertexShaderSource = `
-      attribute vec2 a_position;
+    const vertexShaderSource = `#version 300 es
+      in vec2 a_position;
       uniform vec2 u_deslocamento;
 
       void main() {
@@ -43,12 +43,13 @@
       }
     `;
 
-    const fragmentShaderSource = `
+    const fragmentShaderSource = `#version 300 es
       precision mediump float;
       uniform vec4 u_cor;
+      out vec4 outColor;
 
       void main() {
-        gl_FragColor = u_cor;
+        outColor = u_cor;
       }
     `;
 
@@ -89,7 +90,6 @@
     const uDeslocamento = gl.getUniformLocation(programa, "u_deslocamento");
     const uCor = gl.getUniformLocation(programa, "u_cor");
 
-
     const verticesQuadrado = new Float32Array([
       -0.18, -0.18,
        0.18, -0.18,
@@ -100,22 +100,30 @@
        0.18,  0.18
     ]);
 
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+
     const bufferVertices = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
     gl.bufferData(gl.ARRAY_BUFFER, verticesQuadrado, gl.STATIC_DRAW);
 
+    gl.enableVertexAttribArray(aPosition);
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+    gl.bindVertexArray(null);
+
     const quadrados = [
-      { deslocamento: [-0.6,  0.6], cor: [0.0, 0.0, 0.0, 1.0] }, 
-      { deslocamento: [ 0.0,  0.6], cor: [1.0, 0.0, 0.0, 1.0] }, 
-      { deslocamento: [ 0.6,  0.6], cor: [0.0, 1.0, 0.0, 1.0] }, 
+      { deslocamento: [-0.6,  0.6], cor: [0.0, 0.0, 0.0, 1.0] },
+      { deslocamento: [ 0.0,  0.6], cor: [1.0, 0.0, 0.0, 1.0] },
+      { deslocamento: [ 0.6,  0.6], cor: [0.0, 1.0, 0.0, 1.0] },
 
-      { deslocamento: [-0.6,  0.0], cor: [0.0, 0.0, 1.0, 1.0] }, 
-      { deslocamento: [ 0.0,  0.0], cor: [1.0, 1.0, 0.0, 1.0] }, 
-      { deslocamento: [ 0.6,  0.0], cor: [1.0, 0.0, 1.0, 1.0] }, 
+      { deslocamento: [-0.6,  0.0], cor: [0.0, 0.0, 1.0, 1.0] },
+      { deslocamento: [ 0.0,  0.0], cor: [1.0, 1.0, 0.0, 1.0] },
+      { deslocamento: [ 0.6,  0.0], cor: [1.0, 0.0, 1.0, 1.0] },
 
-      { deslocamento: [-0.6, -0.6], cor: [0.0, 1.0, 1.0, 1.0] }, 
-      { deslocamento: [ 0.0, -0.6], cor: [0.6, 0.6, 0.6, 1.0] }, 
-      { deslocamento: [ 0.6, -0.6], cor: [1.0, 1.0, 1.0, 1.0] } 
+      { deslocamento: [-0.6, -0.6], cor: [0.0, 1.0, 1.0, 1.0] },
+      { deslocamento: [ 0.0, -0.6], cor: [0.6, 0.6, 0.6, 1.0] },
+      { deslocamento: [ 0.6, -0.6], cor: [1.0, 1.0, 1.0, 1.0] }
     ];
 
     function desenhar() {
@@ -124,16 +132,15 @@
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       gl.useProgram(programa);
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, bufferVertices);
-      gl.enableVertexAttribArray(aPosition);
-      gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+      gl.bindVertexArray(vao);
 
       for (const quadrado of quadrados) {
         gl.uniform2fv(uDeslocamento, quadrado.deslocamento);
         gl.uniform4fv(uCor, quadrado.cor);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
+
+      gl.bindVertexArray(null);
     }
 
     desenhar();
